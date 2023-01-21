@@ -19,6 +19,12 @@ echo "${NAME} STARTING "
 wget https://nvidia.github.io/nvidia-docker/gpgkey --no-check-certificate
 sudo apt-key add gpgkey
 distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+
+if [[ "$distribution" == "linuxmint21.1" ]]; then
+  distribution="ubuntu22.04"
+fi
+
+
 curl -s -L "https://nvidia.github.io/nvidia-docker/${distribution}/nvidia-docker.list" | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
 sudo apt-get update -y;
 

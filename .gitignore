@@ -75,3 +75,17 @@ dist
 **/cmake-build-debug
 **/build*
 **/bin
+
+## Application Data
+.data/
+
+## Temp Files
+*.swp
+
+## binary files
+*.o
+deepstream-test1-app
+
+
+## Authentication 
+laptop_setup/gpgkey*

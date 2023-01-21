@@ -212,9 +212,9 @@ Create a gstreamer pipeline in C++ with the following capabilities:
 3. outputs to mp4 file
 
 We expect you to have challenges with the following elements in a pipeline:
-- qtdemux
-- nvstreammux
-- nvinfer
+- qtdemux -- Demuxes a .mov file into raw or compressed audio and/or video streams. -- https://gstreamer.freedesktop.org/documentation/isomp4/qtdemux.html?gi-language=c
+- nvstreammux --The Gst-nvstreammux plugin forms a batch of frames from multiple input sources. --a= https://docs.nvidia.com/metropolis/deepstream/dev-guide/text/DS_plugin_gst-nvstreammux.html
+- nvinfer -- 
 - nvtracker
 - nvosd
 
@@ -295,3 +295,15 @@ GstPadProbeReturn callbacks::meta_parse(GstPad *pad, GstPadProbeInfo *info, gpoi
 A 30 minute discussion about your submission with our team members.
 
 ----
+
+
+
+
+gst-launch-1.0 filesrc location=${SAMPLE_VIDEO} ! qtdemux ! h264parse ! nvv4l2decoder ! m.sink_0 nvstreammux name=m batch-size=1 width=1920 height=1080 gpu-id=0 ! nvinfer config-file-path=${NVINFER_YML} batch-size=1 unique-id=1 ! queue ! nvvideoconvert ! nvdsosd ! nvvideoconvert ! xvimagesink
+We expect you to have challenges with the following elements in a pipeline:
+- qtdemux -- Demuxes a .mov file into raw or compressed audio and/or video streams. -- https://gstreamer.freedesktop.org/documentation/isomp4/qtdemux.html?gi-language=c
+- nvstreammux --The Gst-nvstreammux plugin forms a batch of frames from multiple input sources. --a= https://docs.nvidia.com/metropolis/deepstream/dev-guide/text/DS_plugin_gst-nvstreammux.html
+- nvinfer -- self explanatory
+- nvtracker -- https://docs.nvidia.com/metropolis/deepstream/dev-guide/text/DS_plugin_gst-nvtracker.html
+- nvosd -- draws bounding box
+
