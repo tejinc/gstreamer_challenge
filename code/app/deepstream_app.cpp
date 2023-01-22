@@ -100,7 +100,23 @@ GstPadProbeReturn
   }
 }
 
+void
+on_pad_added (GstElement *element,
+              GstPad     *pad,
+              gpointer    data)
+{
+  GstPad *sinkpad;
+  GstElement *decoder = (GstElement *) data;
 
+  /* We can now link this pad with the vorbis-decoder sink pad */
+  g_print ("Dynamic pad created, linking demuxer/decoder\n");
+
+  sinkpad = gst_element_get_static_pad (decoder, "sink");
+
+  gst_pad_link (pad, sinkpad);
+
+  gst_object_unref (sinkpad);
+}
 
 
 static gboolean
@@ -143,7 +159,8 @@ main (int   argc, char *argv[])
 	     *decoder = NULL, *streammux = NULL,  *pgie = NULL, *tracker = NULL, *queue = NULL,
 	     *nvvidconv = NULL, *nvosd = NULL, *nvvidconv2 = NULL,
 	     *encoder = NULL, *sink = NULL;
-  // Pipeline: source -> h264parse -> decoder -> streammux -> pgie -> tracker -> queue -> nvvidconv -> nvosd
+  GstElement *qtdemux = NULL;
+  // Pipeline: source -> (qtdemux)->h264parse -> decoder -> streammux -> pgie -> tracker -> queue -> nvvidconv -> nvosd
   // nvvidconv2 -> encoder -> filesink
 
   GstBus *bus;
@@ -163,13 +180,15 @@ main (int   argc, char *argv[])
   /* Check input arguments */
   if (argc != 3)
   {
-    g_printerr ("Usage: %s <input H264 filename> <output H264 filename>\n", argv[0]);
+    g_printerr ("Usage: %s <input H264/mp4 filename> <output H264 filename>\n", argv[0]);
+    g_printerr (" Note: The program does not save audio yet.");
     for ( int i = 0; i < argc; i++ )
     {
       g_print("Arg %d: %s\n", i, argv[i] );
     }
     return -1;
   }
+  bool use_qtdemux = g_str_has_suffix (argv[1], ".mp4");
 
 
   /* Create gstreamer elements */
@@ -194,6 +213,17 @@ main (int   argc, char *argv[])
     return -1;
   }
 
+  /* create qtdemux if input file is mp4 */
+  if (use_qtdemux) 
+  {
+    g_print ( "Using qtdemux for mp4 vidoes.\n" );
+    qtdemux = gst_element_factory_make ("qtdemux", "qtdemux0");
+    if (!qtdemux)
+    {
+      g_printerr ("qtdemux element could not be created. Exiting.\n");
+      return -1;
+    }
+  }
 
 
 
@@ -245,11 +275,23 @@ main (int   argc, char *argv[])
   /* we add all elements into the pipeline */
   // TODO modify for integrated graphics? 
   // Currently assume discrete graphics exist
-  gst_bin_add_many (GST_BIN (pipeline),
-      source, h264parse, decoder, streammux, pgie,tracker,
-      nvvidconv, nvosd, 
-      queue, nvvidconv2, encoder,
-      sink, NULL);
+  if (! use_qtdemux )
+  {
+    gst_bin_add_many (GST_BIN (pipeline),
+        source, h264parse, decoder, streammux, pgie,tracker,
+        nvvidconv, nvosd, 
+        queue, nvvidconv2, encoder,
+        sink, NULL);
+  }
+  else
+  {
+    gst_bin_add_many (GST_BIN (pipeline),
+        source, qtdemux, h264parse, decoder, streammux, pgie,tracker,
+        nvvidconv, nvosd, 
+        queue, nvvidconv2, encoder,
+        sink, NULL);
+
+  }
 
 
   // separate into two segments, used for dynamic pad in original test
@@ -280,12 +322,29 @@ main (int   argc, char *argv[])
   gst_object_unref (srcpad);
 
   /* we link the elements together */
-  // Pipeline: source -> h264parse -> decoder -> 
+  // Pipeline: source -> (qtdemux)->h264parse -> decoder -> 
   //           streammux -> pgie -> tracker -> queue -> nvvidconv -> nvosd -> nvvidconv2 -> encoder -> filesink
-  if (!gst_element_link_many (source, h264parse, decoder, NULL)) {
-    g_printerr ("Elements could not be linked: 1. Exiting.\n");
-    return -1;
+
+  if (use_qtdemux )
+  {
+    bool status_code = true;
+    status_code *= gst_element_link (source, qtdemux);
+    status_code *= g_signal_connect (qtdemux, "pad-added", G_CALLBACK (on_pad_added), h264parse);
+    status_code *= gst_element_link (h264parse, decoder );
+    if (!status_code)
+    {
+        g_printerr ("qtdemux block elements could not be linked: 1. Exiting.\n");
+        return -1;
+    }
   }
+  else
+  {
+    if (!gst_element_link_many (source, h264parse, decoder, NULL)) {
+        g_printerr ("Elements could not be linked: 1. Exiting.\n");
+        return -1;
+    }
+  }
+
   if (!gst_element_link_many (streammux, pgie, tracker,
       nvvidconv, nvosd, queue, nvvidconv2,encoder,sink, NULL)) {
     g_printerr ("Elements could not be linked: 2. Exiting.\n");
