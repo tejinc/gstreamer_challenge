@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2019-2022, NVIDIA CORPORATION. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -20,26 +20,55 @@
 # DEALINGS IN THE SOFTWARE.
 ################################################################################
 
-property:
-  gpu-id: 0
-  net-scale-factor: 0.0039215697906911373
-  model-file: ../../../../samples/models/Primary_Detector/resnet10.caffemodel
-  proto-file: ../../../../samples/models/Primary_Detector/resnet10.prototxt
-  model-engine-file: ../../../../samples/models/Primary_Detector/resnet10.caffemodel_b1_gpu0_int8.engine
-  labelfile-path: ../../../../samples/models/Primary_Detector/labels.txt
-  int8-calib-file: ../../../../samples/models/Primary_Detector/cal_trt.bin
-  force-implicit-batch-dim: 1
-  batch-size: 1
-  network-mode: 1
-  num-detected-classes: 4
-  interval: 0
-  gie-unique-id: 1
-  output-blob-names: conv2d_bbox;conv2d_cov/Sigmoid
-  #scaling-filter=0
-  #scaling-compute-hw=0
-  cluster-mode: 2
+CUDA_VER=11.6
+ifeq ($(CUDA_VER),)
+  $(error "CUDA_VER is not set")
+endif
 
-class-attrs-all:
-  pre-cluster-threshold: 0.2
-  topk: 20
-  nms-iou-threshold: 0.5
+APP:= deepstream-test1-app
+
+TARGET_DEVICE = $(shell gcc -dumpmachine | cut -f1 -d -)
+
+NVDS_VERSION:=6.1
+
+LIB_INSTALL_DIR?=/opt/nvidia/deepstream/deepstream-$(NVDS_VERSION)/lib/
+APP_INSTALL_DIR?=/opt/nvidia/deepstream/deepstream-$(NVDS_VERSION)/bin/
+
+ifeq ($(TARGET_DEVICE),aarch64)
+  CFLAGS:= -DPLATFORM_TEGRA
+endif
+
+SRCS:= $(wildcard *.c)
+
+INCS:= $(wildcard *.h)
+
+PKGS:= gstreamer-1.0
+
+OBJS:= $(SRCS:.c=.o)
+
+CFLAGS+= -I /opt/nvidia/deepstream/deepstream/sources/includes/ \
+		-I /usr/local/cuda-$(CUDA_VER)/include
+
+CFLAGS+= $(shell pkg-config --cflags $(PKGS))
+
+LIBS:= $(shell pkg-config --libs $(PKGS))
+
+LIBS+= -L/usr/local/cuda-$(CUDA_VER)/lib64/ -lcudart \
+		-L$(LIB_INSTALL_DIR) -lnvdsgst_meta -lnvds_meta -lnvds_yml_parser \
+		-lcuda -Wl,-rpath,$(LIB_INSTALL_DIR) \
+
+all: $(APP)
+
+%.o: %.c $(INCS) Makefile
+	$(CC) -c -o $@ $(CFLAGS) $<
+
+$(APP): $(OBJS) Makefile
+	$(CC) -o $(APP) $(OBJS) $(LIBS)
+
+install: $(APP)
+	cp -rv $(APP) $(APP_INSTALL_DIR)
+
+clean:
+	rm -rf $(OBJS) $(APP)
+
+

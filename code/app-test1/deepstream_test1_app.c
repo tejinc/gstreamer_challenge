@@ -164,9 +164,9 @@ main (int argc, char *argv[])
   struct cudaDeviceProp prop;
   cudaGetDeviceProperties(&prop, current_device);
   /* Check input arguments */
-  if (argc != 2) {
-    g_printerr ("Usage: %s <yml file>\n", argv[0]);
-    g_printerr ("OR: %s <H264 filename>\n", argv[0]);
+  if (argc != 3) {
+    g_printerr ("Usage: %s <yml file> <output H264 filename>\n", argv[0]);
+    g_printerr ("OR: %s <input H264 filename> <output H264 filename\n", argv[0]);
     return -1;
   }
 
@@ -192,8 +192,14 @@ main (int argc, char *argv[])
   /* Use nvdec_h264 for hardware accelerated decode on GPU */
   decoder = gst_element_factory_make ("nvv4l2decoder", "nvv4l2-decoder");
 
+  /* Use nvenc_h264 for hardware accelerated encode on GPU */
+  encoder = gst_element_factory_make ("nvv4l2h264enc", "nvv4l2-encoder");
+
   /* Create nvstreammux instance to form batches from one or more sources. */
   streammux = gst_element_factory_make ("nvstreammux", "stream-muxer");
+
+  /* Create queue for caching. */
+  queue = gst_element_factory_make ("queue","frame-queue");
 
   if (!pipeline || !streammux) {
     g_printerr ("One element could not be created. Exiting.\n");
@@ -207,6 +213,7 @@ main (int argc, char *argv[])
 
   /* Use convertor to convert from NV12 to RGBA as required by nvosd */
   nvvidconv = gst_element_factory_make ("nvvideoconvert", "nvvideo-converter");
+  nvvidconv2 = gst_element_factory_make ("nvvideoconvert", "nvvideo-converter-2");
 
   /* Create OSD to draw on the converted RGBA buffer */
   nvosd = gst_element_factory_make ("nvdsosd", "nv-onscreendisplay");
@@ -215,7 +222,7 @@ main (int argc, char *argv[])
   if(prop.integrated) {
     transform = gst_element_factory_make ("nvegltransform", "nvegl-transform");
   }
-  sink = gst_element_factory_make ("nveglglessink", "nvvideo-renderer");
+  sink = gst_element_factory_make ("filesink", "filesink");
 
   if (!source || !h264parser || !decoder || !pgie
       || !nvvidconv || !nvosd || !sink) {
@@ -230,6 +237,7 @@ main (int argc, char *argv[])
 
   /* we set the input filename to the source element */
   g_object_set (G_OBJECT (source), "location", argv[1], NULL);
+  g_object_set (G_OBJECT (sink), "location", argv[2], NULL);
 
   if (g_str_has_suffix (argv[1], ".h264")) {
     g_object_set (G_OBJECT (source), "location", argv[1], NULL);
@@ -272,7 +280,9 @@ main (int argc, char *argv[])
   else {
   gst_bin_add_many (GST_BIN (pipeline),
       source, h264parser, decoder, streammux, pgie,
-      nvvidconv, nvosd, sink, NULL);
+      nvvidconv, nvosd, 
+      queue, nvvidconv2, encoder,
+      sink, NULL);
   }
 
   GstPad *sinkpad, *srcpad;
@@ -281,7 +291,7 @@ main (int argc, char *argv[])
 
   sinkpad = gst_element_get_request_pad (streammux, pad_name_sink);
   if (!sinkpad) {
-    g_printerr ("Streammux request sink pad failed. Exiting.\n");
+    g_printerr ("Streamux request sink pad failed. Exiting.\n");
     return -1;
   }
 
@@ -317,7 +327,7 @@ main (int argc, char *argv[])
   }
   else {
     if (!gst_element_link_many (streammux, pgie,
-        nvvidconv, nvosd, sink, NULL)) {
+        nvvidconv, nvosd, queue, nvvidconv2,encoder,sink, NULL)) {
       g_printerr ("Elements could not be linked: 2. Exiting.\n");
       return -1;
     }

@@ -48,6 +48,7 @@ Thumbs.db
 *.mp4
 *.tiff
 *.avi
+*.h264
 *.flv
 *.mov
 *.wmv
@@ -81,11 +82,16 @@ dist
 
 ## Temp Files
 *.swp
+*.swo
 
 ## binary files
 *.o
 deepstream-test1-app
+deepstream-app
 
 
 ## Authentication 
 laptop_setup/gpgkey*
+
+## Others
+.vimrc
