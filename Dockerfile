@@ -1,6 +1,6 @@
 FROM rad_challenge
 
-ADD ./code /code
+COPY ./code/ /code/
 WORKDIR /code/app
 RUN ls
 RUN make

@@ -21,3 +21,9 @@ deepstream-app
 *.mov
 *.wmv
 
+code/app/deepstream-app
+code/app/*.o
+code/sample_apps  
+code/test  
+code/tutorial 
+code/app-test1

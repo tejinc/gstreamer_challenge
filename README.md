@@ -307,10 +307,10 @@ We expect you to have challenges with the following elements in a pipeline:
 - nvtracker -- https://docs.nvidia.com/metropolis/deepstream/dev-guide/text/DS_plugin_gst-nvtracker.html
 - nvosd -- draws bounding box
 
-# Deepstream-app Instruction
+__Deepstream-app Instruction__
 
-1. First build rad_challenge. 
-2. In the top directory, do
+1. First build `rad_challenge`
+2. In the top directory (containing `code`, `Makefile`, etc), do
 ```bash
 # build the container
 make
