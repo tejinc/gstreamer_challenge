@@ -25,6 +25,7 @@ ifeq ($(CUDA_VER),)
   $(error "CUDA_VER is not set")
 endif
 
+
 APP:= deepstream-app
 
 TARGET_DEVICE = $(shell gcc -dumpmachine | cut -f1 -d -)
@@ -38,13 +39,13 @@ ifeq ($(TARGET_DEVICE),aarch64)
   CFLAGS:= -DPLATFORM_TEGRA
 endif
 
-SRCS:= $(wildcard *.c)
+SRCS:= $(wildcard *.cpp)
 
 INCS:= $(wildcard *.h)
 
 PKGS:= gstreamer-1.0
 
-OBJS:= $(SRCS:.c=.o)
+OBJS:= $(SRCS:.cpp=.o)
 
 CFLAGS+= -I /opt/nvidia/deepstream/deepstream/sources/includes/ \
 		-I /usr/local/cuda-$(CUDA_VER)/include
@@ -59,16 +60,17 @@ LIBS+= -L/usr/local/cuda-$(CUDA_VER)/lib64/ -lcudart \
 
 all: $(APP)
 
-%.o: %.c $(INCS) Makefile
-	$(CC) -c -o $@ $(CFLAGS) $<
+%.o: %.cpp $(INCS) Makefile
+	$(CXX) -c -o $@ $(CFLAGS) $<
 
 $(APP): $(OBJS) Makefile
-	$(CC) -o $(APP) $(OBJS) $(LIBS)
+	$(CXX) -o $(APP) $(OBJS) $(LIBS)
 
 install: $(APP)
 	cp -rv $(APP) $(APP_INSTALL_DIR)
 
 clean:
 	rm -rf $(OBJS) $(APP)
+	rm -rf *avi *h264
 
 

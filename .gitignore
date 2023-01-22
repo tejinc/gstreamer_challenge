@@ -67,6 +67,8 @@ dist
 **/*.dot
 **/*.ts
 **/*.mp4
+**/*.avi
+**/*.h264
 
 ## CMake files && generated libraries
 **/*.so
