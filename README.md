@@ -316,6 +316,12 @@ __Deepstream-app Instruction__
 make
 ```
 This will create the image deepstream-app. Next we will process a sample video.
+To test the container:
+```bash
+make test
+```
+to run a test that does the following operation:
+
 ```bash
 mkdir workdir
 
@@ -338,3 +344,5 @@ docker run --rm --name deepstream-app-container \
 
 The command will create a working directory, bind mount it to the docker container, and allow deepstream-app 
 to process the sample video file. 
+
+
