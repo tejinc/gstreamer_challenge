@@ -296,30 +296,30 @@ main (int   argc, char *argv[])
 
   // separate into two segments, used for dynamic pad in original test
   // it's done this way probably because the streammux needs to have a new sink requested
-  GstPad *srcpad, *sinkpad; 
-  gchar pad_name_src[16] = "src";
-  gchar pad_name_sink[16] = "sink_0";
+  // GstPad *srcpad, *sinkpad; 
+  // gchar pad_name_src[16] = "src";
+  // gchar pad_name_sink[16] = "sink_0";
 
-  sinkpad = gst_element_get_request_pad (streammux, pad_name_sink); //sinkpad starts from streammux, dynamic pad? 
-  if (!sinkpad) {
-    g_printerr ("Streamux request sink pad failed. Exiting.\n");
-    return -1;
-  }
+  // sinkpad = gst_element_get_request_pad (streammux, pad_name_sink); //sinkpad starts from streammux, dynamic pad? 
+  // if (!sinkpad) {
+  //   g_printerr ("Streamux request sink pad failed. Exiting.\n");
+  //   return -1;
+  // }
 
-  srcpad = gst_element_get_static_pad (decoder, pad_name_src);
-  if (!srcpad) {
-    g_printerr ("Decoder request src pad failed. Exiting.\n");
-    return -1;
-  }
+  // srcpad = gst_element_get_static_pad (decoder, pad_name_src);
+  // if (!srcpad) {
+  //   g_printerr ("Decoder request src pad failed. Exiting.\n");
+  //   return -1;
+  // }
 
 
-  if (gst_pad_link (srcpad, sinkpad) != GST_PAD_LINK_OK) {
-      g_printerr ("Failed to link decoder to stream muxer. Exiting.\n");
-      return -1;
-  }
+  // if (gst_pad_link (srcpad, sinkpad) != GST_PAD_LINK_OK) {
+  //     g_printerr ("Failed to link decoder to stream muxer. Exiting.\n");
+  //     return -1;
+  // }
 
-  gst_object_unref (sinkpad);
-  gst_object_unref (srcpad);
+  // gst_object_unref (sinkpad);
+  // gst_object_unref (srcpad);
 
   /* we link the elements together */
   // Pipeline: source -> (qtdemux)->h264parse -> decoder -> 
@@ -330,7 +330,6 @@ main (int   argc, char *argv[])
     bool status_code = true;
     status_code *= gst_element_link (source, qtdemux);
     status_code *= g_signal_connect (qtdemux, "pad-added", G_CALLBACK (on_pad_added), h264parse);
-    status_code *= gst_element_link (h264parse, decoder );
     if (!status_code)
     {
         g_printerr ("qtdemux block elements could not be linked: 1. Exiting.\n");
@@ -339,11 +338,25 @@ main (int   argc, char *argv[])
   }
   else
   {
-    if (!gst_element_link_many (source, h264parse, decoder, NULL)) {
+    bool status_code = true;
+    status_code *= gst_element_link (source, h264parse);
+    if (!status_code)
+    {
         g_printerr ("Elements could not be linked: 1. Exiting.\n");
         return -1;
     }
   }
+  if (!g_signal_connect (h264parse, "pad-added", G_CALLBACK(on_pad_added), decoder ))
+  {
+    g_printerr ("h264parser and decoder could not be linked");
+    return -1;   
+  }
+  if (!g_signal_connect (decoder , "pad-added", G_CALLBACK(on_pad_added), streammux ))
+  {
+    g_printerr ("decoder and streammux could not be linked");
+    return -1;   
+  }
+
 
   if (!gst_element_link_many (streammux, pgie, tracker,
       nvvidconv, nvosd, queue, nvvidconv2,encoder,sink, NULL)) {

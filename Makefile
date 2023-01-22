@@ -12,6 +12,11 @@ work ?= docker/configs/work.env
 include $(work)
 export $(shell sed 's/=.*//' $(work))
 
+build:
+	docker build --tag ${APPLICATION_NAME} .
+
+build-nc:
+	docker build --no-cache --tag ${APPLICATION_NAME} .
 
 
 check-dependency:
@@ -21,12 +26,6 @@ check-dependency:
 	else \
 		echo "dependency met"; \
 	fi
-
-build:
-	docker build --tag ${APPLICATION_NAME} .
-
-build-nc:
-	docker build --no-cache --tag ${APPLICATION_NAME} .
 
 inspect-image:
 	docker run -it --rm --entrypoint bash ${APPLICATION_NAME}
