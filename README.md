@@ -307,3 +307,34 @@ We expect you to have challenges with the following elements in a pipeline:
 - nvtracker -- https://docs.nvidia.com/metropolis/deepstream/dev-guide/text/DS_plugin_gst-nvtracker.html
 - nvosd -- draws bounding box
 
+# Deepstream-app Instruction
+
+1. First build rad_challenge. 
+2. In the top directory, do
+```bash
+# build the container
+make
+```
+This will create the image deepstream-app. Next we will process a sample video.
+```bash
+mkdir workdir
+
+docker run --name rad_challenge_copy rad_challenge
+
+docker cp rad_challenge_copy:/opt/nvidia/deepstream/deepstream/samples/streams/sample_720p.h264 workdir/
+
+docker run --rm --name deepstream-app-container \
+      --privileged \
+      --net=host \
+      --user=0 \
+      --security-opt seccomp=unconfined  \
+      --runtime nvidia \
+      --gpus all \
+      --device /dev/dri \
+      --device /dev/dri \
+      -v `pwd`/workdir:/workdir/ \
+      deepstream-app:latest /workdir/sample_720p.h264 /workdir/output.avi
+```
+
+The command will create a working directory, bind mount it to the docker container, and allow deepstream-app 
+to process the sample video file. 

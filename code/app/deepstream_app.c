@@ -87,7 +87,11 @@ main (int   argc, char *argv[])
   /* Check input arguments */
   if (argc != 3)
   {
-    g_printerr ("Usage: %s <input H264 filename> <output H264 filename\n", argv[0]);
+    g_printerr ("Usage: %s <input H264 filename> <output H264 filename>\n", argv[0]);
+    for ( int i = 0; i < argc; i++ )
+    {
+      g_print("Arg %d: %s\n", i, argv[i] );
+    }
     return -1;
   }
 
@@ -136,8 +140,8 @@ main (int   argc, char *argv[])
   }
   else
   {
-    g_printerr("Error! Please set NVINFER_YML.\n");
-    return -1;
+    g_print ("Use default NVINFER_YML=/code/config_infer_primary.yml" );
+    g_object_set (G_OBJECT (pgie), "config-file-path","/code/config_infer_primary.yml", NULL);
   }
   /* setting tracker*/
   if ( getenv ("TRACKER_YML") && getenv ("TRACKER_LIB") )
@@ -149,8 +153,10 @@ main (int   argc, char *argv[])
   }
   else
   {
-    g_printerr("Error! Please ensure TRACKER_YML and TRACKER_LIB are set properly.\n");
-    return -1;
+    g_print ("Use default TRACKER_YML=/opt/nvidia/deepstream/deepstream-6.1/samples/configs/deepstream-app/config_tracker_NvDCF_perf.yml" );
+    g_print ("Use default TRACKER_LIB=/opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so");
+    g_object_set (G_OBJECT (tracker), "ll-config-file","/opt/nvidia/deepstream/deepstream-6.1/samples/configs/deepstream-app/config_tracker_NvDCF_perf.yml" , NULL);
+    g_object_set (G_OBJECT (tracker), "ll-lib-file", "/opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so" , NULL);
   }
 
 

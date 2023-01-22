@@ -1,0 +1,23 @@
+deepstream-app
+*o
+*.swp
+*.swo
+
+
+# Applications
+*.app
+*.exe
+*.war
+.cache
+.config
+.dbus
+.local
+# Large media files
+*.mp4
+*.tiff
+*.avi
+*.h264
+*.flv
+*.mov
+*.wmv
+
